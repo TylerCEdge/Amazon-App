@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var console_table = require("console.table");
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -17,37 +18,53 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
   if (err) throw err;
-  console.log("connected as id " + connection.threadId + "\n");
-  readProducts();
 });
 
-function readProducts() {
+var show = function show() {
   console.log("Selecting all products...\n");
   connection.query("SELECT * FROM products", function (err, res) {
     if (err) throw err;
     // Log all results of the SELECT statement
-    console.log(res);
+    console.table(res);
     connection.end();
   });
 }
 
-inquirer.prompt([
-  
-  {
-    type: "input",
-    name: "product",
-    message: "What would you like to buy?"
-  },
+var run = function run() {
 
-  {
-    type: "input",
-    name: "quantity",
-    message: "How many do you want?"
-  }
+  connection.query("SELECT * FROM products", function (err, res) {
+    if (err) throw err;
+    inquirer.prompt([
 
-]).then(function(user) {
+      {
+        type: "list",
+        name: "product",
+        choices: function() {
+          var choiceArray = [];
+          for (var i = 0; i < res.length; i++) {
+            choiceArray.push(res[i].product_name);
+          }
+          return choiceArray;
+        },
+        message: "What would you like to buy?"
+      },
+    
+      {
+        type: "input",
+        name: "quantity",
+        message: "How many do you want?"
+      }
+    
+    ]).then(function (user) {
+    
+      console.log("You want " + user.product + ".");
+      console.log("You want " + user.quantity + " of them.");
+    
+    });
+  });
 
-console.log("You want " + user.product + ".");
-console.log("You want " + user.quantity + " of them.");
-  
-});
+}
+
+show();
+run();
+
